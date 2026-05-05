@@ -1,5 +1,7 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException, Inject } from '@nestjs/common';
 import { Octokit } from '@octokit/rest';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import * as cacheManager from 'cache-manager';
 
 @Injectable()
 export class AnalyzerService {
@@ -7,9 +9,18 @@ export class AnalyzerService {
         auth: process.env.GITHUB_TOKEN
     });
     
+    constructor(@Inject(CACHE_MANAGER) private cacheManager: cacheManager.Cache) {}
+    
     private readonly SUPPORTED_EXTENSIONS = /\.(js|jsx|ts|tsx|py|java|go|cpp|c|rb|php|cs|swift|kt|rs|dart|scala|lua|sh|sql)$/i;
     
     async analyzeRepo(owner: string, repo: string) {
+        const cacheKey = `repo_${owner}_${repo}`;
+        const cachedResult = await this.cacheManager.get(cacheKey);
+        
+        if (cachedResult) {
+            return cachedResult;
+        }
+
         try {
             const { data: repoData } = await this.octokit.rest.repos.get({ owner, repo });
             const defaultBranch = repoData.default_branch;
@@ -27,6 +38,7 @@ export class AnalyzerService {
                     file.type === 'blob' && 
                     !file.path.includes('node_modules') &&
                     !file.path.includes('.git') &&
+                    !file.path.includes('.next') &&
                     !file.path.includes('dist')
                 );
             });
@@ -69,10 +81,19 @@ export class AnalyzerService {
                     }
                 }
             }
-            return this.buildOutput(nodes, links);
-        } catch(err) {
+            
+            const result = this.buildOutput(nodes, links);
+            await this.cacheManager.set(cacheKey, result);
+            return result;
+        } catch(err: any) {
             console.error(err);
-            throw new InternalServerErrorException("Erreur lors de l'analyse : " + err.message);
+            if (err.status === 404) {
+                throw new NotFoundException("Dépôt GitHub introuvable ou privé. Vérifiez l'URL.");
+            }
+            if (err.status === 403) {
+                throw new InternalServerErrorException("Limite de requêtes API GitHub atteinte. Réessayez plus tard.");
+            }
+            throw new InternalServerErrorException("Erreur lors de l'analyse : " + (err.message || "Erreur inconnue"));
         }
     }
 
@@ -195,6 +216,14 @@ export class AnalyzerService {
         });
 
         mermaid += "\n  linkStyle default stroke:#94a3b8,stroke-width:1px,opacity:0.8\n";
-        return { mermaid, graphData: { nodes, links } };
+
+        const dependencyList = visualNodes.map(node => ({
+            file: node.id,
+            imports: visualLinks
+                .filter(l => l.source === node.id)
+                .map(l => l.target)
+        })).filter(item => item.imports.length > 0);
+
+        return { mermaid, graphData: { nodes, links }, dependencyList };
     }
 }

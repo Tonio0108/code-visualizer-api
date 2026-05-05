@@ -21,9 +21,13 @@ export class AnalyzerController {
             }
 
             return await this.analyzerService.analyzeRepo(owner, repo);
-        } catch(err) {
+        } catch(err: any) {
             console.log(err);
-            throw new BadRequestException("Erreur lors de l'analyse du repo: " + err);
+            // If it's already a NestJS exception, rethrow it to preserve status code and message
+            if (err.getResponse) {
+                throw err;
+            }
+            throw new BadRequestException(err.message || "Une erreur inconnue est survenue lors de l'analyse");
         }
     }
 }
