@@ -18,6 +18,20 @@ async function bootstrap() {
     transform: true,
   }));
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.init();
+  return app;
 }
-bootstrap();
+
+// Pour le déploiement local
+if (process.env.NODE_ENV !== 'production') {
+  bootstrap().then(app => app.listen(process.env.PORT ?? 3000));
+}
+
+// Pour Vercel (exportation du handler)
+export const handler = async (req: any, res: any) => {
+  const app = await bootstrap();
+  const instance = app.getHttpAdapter().getInstance();
+  instance(req, res);
+};
+
+export default handler;
