@@ -1,36 +1,25 @@
-import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
-
-let cachedServer: any;
+import helmet from 'helmet';
 
 async function bootstrap() {
-  if (!cachedServer) {
-    const app = await NestFactory.create(AppModule);
-    
-    // Security
-    app.use(helmet());
-    app.enableCors();
-    
-    // Global configurations
-    app.setGlobalPrefix('api');
-    app.useGlobalPipes(new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }));
+  const app = await NestFactory.create(AppModule);
+  
+  // Security settings
+  app.use(helmet());
+  app.enableCors();
+  
+  // Global configurations
+  app.setGlobalPrefix('api');
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }));
 
-    await app.init();
-    cachedServer = app.getHttpAdapter().getInstance();
-  }
-  return cachedServer;
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  console.log(`Application is running on: http://localhost:${port}/api`);
 }
-
-// Export the handler for Vercel
-export default async (req: any, res: any) => {
-  const server = await bootstrap();
-  return server(req, res);
-};
-
+bootstrap();
