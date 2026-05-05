@@ -18,8 +18,22 @@ async function bootstrap() {
     transform: true,
   }));
 
-  const port = process.env.PORT || 3000;
-  await app.listen(port);
-  console.log(`Application is running on: http://localhost:${port}/api`);
+  await app.init();
+  return app;
 }
-bootstrap();
+
+// Check if running in Vercel environment
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  bootstrap().then(async (app) => {
+    const port = process.env.PORT || 3001;
+    await app.listen(port);
+    console.log(`Application is running on: http://localhost:${port}/api`);
+  });
+}
+
+// Export the handler for Vercel
+export default async (req: any, res: any) => {
+  const app = await bootstrap();
+  const instance = app.getHttpAdapter().getInstance();
+  return instance(req, res);
+};
