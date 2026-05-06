@@ -4,36 +4,29 @@ import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 
 async function bootstrap() {
+
   const app = await NestFactory.create(AppModule);
-  
-  // Security settings
+
   app.use(helmet());
-  app.enableCors();
-  
-  // Global configurations
+
   app.setGlobalPrefix('api');
+
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
     forbidNonWhitelisted: true,
     transform: true,
   }));
 
-  await app.init();
-  return app;
+  app.enableCors({
+    origin: ['*'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+    allowedHeaders: 'Origin, X-Requested-With, Content-Type, Accept, Authorization,Access-Control-Allow-Origin,Access-Control-Allow-Credentials,Access-Control-Allow-Headers,Access-Control-Allow-Methods,Access-Control-Origin,User-Agent,Referer,Accept-Encoding,Accept-language,Access-Control-Request-Headers,Cache-Control,Pragma',
+  })
+  await app.listen(process.env.PORT ?? 3000);
+  
 }
 
-// Check if running in Vercel environment
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-  bootstrap().then(async (app) => {
-    const port = process.env.PORT || 3001;
-    await app.listen(port);
-    console.log(`Application is running on: http://localhost:${port}/api`);
-  });
-}
+bootstrap();
 
-// Export the handler for Vercel
-export default async (req: any, res: any) => {
-  const app = await bootstrap();
-  const instance = app.getHttpAdapter().getInstance();
-  return instance(req, res);
-};
+
