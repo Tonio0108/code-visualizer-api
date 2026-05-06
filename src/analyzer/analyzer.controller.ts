@@ -1,7 +1,7 @@
 import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
 import { AnalyzerService } from './analyzer.service';
 
-@Controller('analyzer')
+@Controller('api/analyzer')
 export class AnalyzerController {
     constructor(private readonly analyzerService: AnalyzerService){}
 
