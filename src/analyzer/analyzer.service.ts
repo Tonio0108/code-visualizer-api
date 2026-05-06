@@ -1,6 +1,13 @@
 import { Injectable, InternalServerErrorException, NotFoundException, Inject, OnModuleInit } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import * as cacheManager from 'cache-manager';
+import type { Octokit } from '@octokit/rest';
+
+// This is never called but forces Vercel's bundler (NFT) to include the package.
+// If it were executed, it would fail with ERR_REQUIRE_ESM in CommonJS.
+// We use dynamic import via eval in onModuleInit to safely load it at runtime.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _forceBundleVercel = () => import('@octokit/rest');
 
 @Injectable()
 export class AnalyzerService implements OnModuleInit {
