@@ -7,8 +7,7 @@ async function configureApp(app: INestApplication) {
   app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }
   }));
-  
-  app.setGlobalPrefix('api', { exclude: ['/'] });
+
   
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
