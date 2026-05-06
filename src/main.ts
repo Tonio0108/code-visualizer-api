@@ -1,27 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe, INestApplication } from '@nestjs/common';
-import helmet from 'helmet';
-
-async function configureApp(app: INestApplication) {
-  app.use(helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" }
-  }));
-
-  
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
-  
-  app.enableCors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true,
-    allowedHeaders: '*',
-  });
-}
+import { configureApp } from './app-setup';
 
 // Support for local development
 async function bootstrap() {
