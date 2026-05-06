@@ -4,39 +4,46 @@ import { ValidationPipe, INestApplication } from '@nestjs/common';
 import helmet from 'helmet';
 
 async function configureApp(app: INestApplication) {
-  app.use(helmet());
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+  }));
+  
+  app.setGlobalPrefix('api', { exclude: ['/'] });
+  
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
     forbidNonWhitelisted: true,
     transform: true,
   }));
+  
   app.enableCors({
-    origin: ['*'],
+    origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
-    allowedHeaders: 'Origin, X-Requested-With, Content-Type, Accept, Authorization,Access-Control-Allow-Origin,Access-Control-Allow-Credentials,Access-Control-Allow-Headers,Access-Control-Allow-Methods,Access-Control-Origin,User-Agent,Referer,Accept-Encoding,Accept-language,Access-Control-Request-Headers,Cache-Control,Pragma',
+    allowedHeaders: '*',
   });
 }
 
+// Support for local development
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   await configureApp(app);
   await app.listen(process.env.PORT ?? 3000);
 }
 
-// Support for local development
 if (!process.env.VERCEL) {
   bootstrap();
 }
 
 // Export for Vercel Serverless Functions
-let cachedHandler: any;
+let cachedApp: any;
+
 export default async (req: any, res: any) => {
-  if (!cachedHandler) {
-    const app = await NestFactory.create(AppModule);
-    await configureApp(app);
-    await app.init();
-    cachedHandler = app.getHttpAdapter().getInstance();
+  if (!cachedApp) {
+    const nestApp = await NestFactory.create(AppModule);
+    await configureApp(nestApp);
+    await nestApp.init();
+    cachedApp = nestApp.getHttpAdapter().getInstance();
   }
-  return cachedHandler(req, res);
+  return cachedApp(req, res);
 };
