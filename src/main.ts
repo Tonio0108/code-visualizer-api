@@ -5,7 +5,7 @@ import helmet from 'helmet';
 
 async function configureApp(app: INestApplication) {
   app.use(helmet());
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', { exclude: ['/'] });
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
     forbidNonWhitelisted: true,
