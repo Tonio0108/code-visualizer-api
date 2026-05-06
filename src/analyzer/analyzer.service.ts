@@ -1,15 +1,19 @@
-import { Injectable, InternalServerErrorException, NotFoundException, Inject } from '@nestjs/common';
-import { Octokit } from '@octokit/rest';
+import { Injectable, InternalServerErrorException, NotFoundException, Inject, OnModuleInit } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import * as cacheManager from 'cache-manager';
 
 @Injectable()
-export class AnalyzerService {
-    private octokit = new Octokit({
-        auth: process.env.GITHUB_TOKEN
-    });
+export class AnalyzerService implements OnModuleInit {
+    private octokit: any;
     
     constructor(@Inject(CACHE_MANAGER) private cacheManager: cacheManager.Cache) {}
+
+    async onModuleInit() {
+        const { Octokit } = await (eval(`import('@octokit/rest')`) as any);
+        this.octokit = new Octokit({
+            auth: process.env.GITHUB_TOKEN
+        });
+    }
     
     private readonly SUPPORTED_EXTENSIONS = /\.(js|jsx|ts|tsx|py|java|go|cpp|c|rb|php|cs|swift|kt|rs|dart|scala|lua|sh|sql)$/i;
     
