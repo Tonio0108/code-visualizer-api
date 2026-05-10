@@ -1,4 +1,5 @@
 import { ValidationPipe, INestApplication } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 
 export async function configureApp(app: INestApplication) {
@@ -19,4 +20,14 @@ export async function configureApp(app: INestApplication) {
     credentials: true,
     allowedHeaders: '*',
   });
+
+  const config = new DocumentBuilder()
+    .setTitle('VCR Explorer API')
+    .setDescription("API d'analyse et de visualisation d'architecture de dépôts GitHub")
+    .setVersion('1.0')
+    .addTag('analyzer', 'Endpoints liés à l\'analyse de dépôts')
+    .build();
+  
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
 }
